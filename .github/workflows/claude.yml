@@ -1,29 +1,23 @@
-name: Claude Code
+name: Claude Code (Issue)
 
 on:
-  # @claude メンションで応答
+  # Issue での @claude メンション
   issue_comment:
     types: [created]
-  pull_request_review_comment:
-    types: [created]
-  pull_request_review:
-    types: [submitted]
-  # Issue に @claude が含まれている場合、または claude がアサインされた場合
+  # Issue 作成時に @claude が含まれている場合、または claude がアサインされた場合
   issues:
     types: [opened, assigned]
 
-# 同じ Issue/PR で重複実行を防止（Claude の応答コメントでキャンセルされないよう false に設定）
+# 同じ Issue で重複実行を防止（Claude の応答コメントでキャンセルされないよう false に設定）
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
   claude:
-    # @claude メンションが含まれている場合のみ実行
+    # Issue での @claude メンション（PR は claude-code-review.yml で処理）
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issue_comment' && !github.event.issue.pull_request && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
 
     runs-on: ubuntu-latest
@@ -31,7 +25,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-      issues: read
+      issues: write
       id-token: write
       actions: read # CI結果を読み取るために必要
 
