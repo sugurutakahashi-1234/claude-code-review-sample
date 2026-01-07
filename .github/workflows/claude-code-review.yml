@@ -2,40 +2,39 @@ name: Claude Code Review
 
 on:
   pull_request:
-    types: [opened, synchronize, ready_for_review]
-    # Optional: Only run on specific file changes
+    types: [opened, synchronize, ready_for_review, reopened]
+    branches-ignore:
+      - main # develop から main への Release PR は自動レビュー対象外（@claude メンションは有効）
+    # オプション: 特定のファイル変更時のみ実行
     # paths:
     #   - "src/**/*.ts"
     #   - "src/**/*.tsx"
     #   - "src/**/*.js"
     #   - "src/**/*.jsx"
+  # @claude メンションで応答（PR のコメントのみ、普通の Issue では動作しない）
+  pull_request_review_comment:
+    types: [created]
+  issue_comment:
+    types: [created]
 
 jobs:
   claude-review:
-    # Skip review for draft pull requests and develop→main release PRs
-    if: |
-      github.event.pull_request.draft == false &&
-      !(github.event.pull_request.head.ref == 'develop' &&
-        github.event.pull_request.base.ref == 'main')
-
-    # Optional: Filter by PR author
-    # if: |
-    #   github.event.pull_request.draft == false &&
-    #   (github.event.pull_request.user.login == 'external-contributor' ||
-    #   github.event.pull_request.user.login == 'new-developer' ||
-    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR')
-
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions:
       contents: read
       pull-requests: write
-      issues: read
       id-token: write
+
+    # ドラフトPRはスキップ、コメントの場合は @claude メンションが必要
+    if: |
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@claude'))
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
@@ -46,30 +45,32 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-          # Use sticky comments to make Claude reuse the same comment on subsequent pushes to the same PR
+          # 追加コミット時に同じコメントを更新する
           use_sticky_comment: true
 
-          # Prompt for automated review (no @claude mention needed)
+          # 進捗トラッキングを有効化
+          track_progress: true
+
+          # 自動レビュー用プロンプト
           prompt: |
-            Please review this pull request and provide feedback on:
-            - Code quality and best practices
-            - Potential bugs or issues
-            - Performance considerations
-            - Security concerns
-            - Test coverage
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
 
-            Be constructive and helpful in your feedback.
+            Note: The PR branch is already checked out in the current working directory.
 
-          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
-          # claude_args: --model claude-opus-4-20250514
+            このPull Requestを日本語でレビューしてください。以下の観点に重点を置いてください：
+            - コード品質とベストプラクティス
+            - 潜在的なバグや問題
+            - セキュリティへの影響
+            - パフォーマンスの考慮事項
 
-          # Optional: Customize review based on file types
-          # prompt: |
-          #   Review this PR focusing on:
-          #   - For TypeScript files: Type safety and proper interface usage
-          #   - For API endpoints: Security, input validation, and error handling
-          #   - For React components: Performance, accessibility, and best practices
-          #   - For tests: Coverage, edge cases, and test quality
+            レビューコメントの投稿方法：
+            - 全体的なフィードバックには `gh pr comment` を使用してください
+            - 特定のコード行への指摘には `mcp__github_inline_comment__create_inline_comment` を使用してください
+            - GitHubコメントのみを投稿し、メッセージとしてレビューテキストを送信しないでください
 
-          # Optional: Add specific tools for running tests or linting
-          # claude_args: --allowedTools "Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck)"
+            必ず日本語でレビューを実施し、具体的で建設的なフィードバックを提供してください。
+
+          # PRコメントと差分表示用のツールを許可
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
