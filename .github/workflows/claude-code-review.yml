@@ -2,56 +2,74 @@ name: Claude Code Review
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
-  issue_comment:
-    types: [created]
+    types: [opened, synchronize, ready_for_review]
+    # Optional: Only run on specific file changes
+    # paths:
+    #   - "src/**/*.ts"
+    #   - "src/**/*.tsx"
+    #   - "src/**/*.js"
+    #   - "src/**/*.jsx"
 
 jobs:
-  review:
+  claude-review:
+    # Skip review for draft pull requests and develop→main release PRs
     if: |
-      (github.event_name == 'pull_request') ||
-      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@claude'))
+      github.event.pull_request.draft == false &&
+      !(github.event.pull_request.head.ref == 'develop' &&
+        github.event.pull_request.base.ref == 'main')
+
+    # Optional: Filter by PR author
+    # if: |
+    #   github.event.pull_request.draft == false &&
+    #   (github.event.pull_request.user.login == 'external-contributor' ||
+    #   github.event.pull_request.user.login == 'new-developer' ||
+    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR')
+
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       pull-requests: write
-      issues: write
+      issues: read
+      id-token: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install Claude Code
-        run: npm install -g @anthropic-ai/claude-code
+          fetch-depth: 1
 
       - name: Run Claude Code Review
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
-        run: |
-          # Get PR diff
-          gh pr diff $PR_NUMBER > pr_diff.txt
+        id: claude-review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
-          # Run Claude Code review
-          claude -p "
-          以下のPRの差分をレビューしてください。
-          コードの品質、潜在的なバグ、セキュリティの問題、パフォーマンスの改善点について確認してください。
-          レビューは日本語で行い、具体的な改善提案を含めてください。
+          # Use sticky comments to make Claude reuse the same comment on subsequent pushes to the same PR
+          use_sticky_comment: true
 
-          $(cat pr_diff.txt)
-          " > review_output.txt
+          # Prompt for automated review (no @claude mention needed)
+          prompt: |
+            Please review this pull request and provide feedback on:
+            - Code quality and best practices
+            - Potential bugs or issues
+            - Performance considerations
+            - Security concerns
+            - Test coverage
 
-          # Post review comment
-          gh pr comment $PR_NUMBER --body "## Claude Code Review
+            Be constructive and helpful in your feedback.
 
-          $(cat review_output.txt)
+          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
+          # claude_args: --model claude-opus-4-20250514
 
-          ---
-          *このレビューは Claude Code によって自動生成されました*"
+          # Optional: Customize review based on file types
+          # prompt: |
+          #   Review this PR focusing on:
+          #   - For TypeScript files: Type safety and proper interface usage
+          #   - For API endpoints: Security, input validation, and error handling
+          #   - For React components: Performance, accessibility, and best practices
+          #   - For tests: Coverage, edge cases, and test quality
+
+          # Optional: Add specific tools for running tests or linting
+          # claude_args: --allowedTools "Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck)"
