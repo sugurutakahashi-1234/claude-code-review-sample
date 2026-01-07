@@ -51,6 +51,9 @@ jobs:
           # 追加コミット時に同じコメントを更新する
           use_sticky_comment: true
 
+          # 進捗を表示する
+          track_progress: true
+
           # レビュー用プロンプト
           prompt: |
             REPO: ${{ github.repository }}
