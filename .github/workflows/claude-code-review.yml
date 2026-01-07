@@ -1,0 +1,57 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
+
+jobs:
+  review:
+    if: |
+      (github.event_name == 'pull_request') ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@claude'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run Claude Code Review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+        run: |
+          # Get PR diff
+          gh pr diff $PR_NUMBER > pr_diff.txt
+
+          # Run Claude Code review
+          claude -p "
+          以下のPRの差分をレビューしてください。
+          コードの品質、潜在的なバグ、セキュリティの問題、パフォーマンスの改善点について確認してください。
+          レビューは日本語で行い、具体的な改善提案を含めてください。
+
+          $(cat pr_diff.txt)
+          " > review_output.txt
+
+          # Post review comment
+          gh pr comment $PR_NUMBER --body "## Claude Code Review
+
+          $(cat review_output.txt)
+
+          ---
+          *このレビューは Claude Code によって自動生成されました*"
