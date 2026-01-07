@@ -2,6 +2,8 @@ name: Claude Code Review
 
 on:
   pull_request:
+    # Note: synchronize は意図的に除外しています
+    # 追加コミット時の自動レビューは行わず、@claude メンションで手動レビューを依頼する方針です
     types: [opened, ready_for_review, reopened]
     # オプション: 特定のファイル変更時のみ実行
     # paths:
@@ -13,10 +15,10 @@ on:
   issue_comment:
     types: [created]
 
-# 同じPRで重複実行を防止（新しいリクエストが来たら実行中のジョブをキャンセル）
+# 同じPRで重複実行を防止（進捗コメントでキャンセルされないよう false に設定）
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   claude-review:

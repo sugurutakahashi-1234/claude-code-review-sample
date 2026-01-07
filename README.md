@@ -10,8 +10,9 @@ Pull Request が作成・更新されると、Claude Code が自動でコード�
 
 - PR 作成時の自動コードレビュー
 - PR 更新時（ドラフト解除、再オープン）のレビュー再実行
-- `@claude` メンションでの対話（PR 上）
-- Issue での `@claude` メンションにも対応
+- `@claude` メンションでの対話（PR・Issue）
+- PR コード行へのコメントでの `@claude` 対応
+- PR レビュー（Approve/Request changes/Comment）での `@claude` 対応
 - 日本語でのレビューコメント
 - リアルタイム進捗表示
 
@@ -20,7 +21,7 @@ Pull Request が作成・更新されると、Claude Code が自動でコード�
 | ファイル | 用途 |
 |---------|------|
 | `claude-code-review.yml` | PR の自動レビュー + PR 全体へのコメント `@claude` |
-| `claude.yml` | Issue + PR コード行へのコメント `@claude` |
+| `claude.yml` | Issue + PR コード行コメント + PR レビュー `@claude` |
 
 ## セットアップ
 
