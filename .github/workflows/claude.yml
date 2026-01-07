@@ -15,9 +15,9 @@ concurrency:
 
 jobs:
   claude:
-    # Issue での @claude メンション（PR は claude-code-review.yml で処理）
+    # Issue での @claude メンション（PR は claude-code-review.yml で処理、bot のコメントは除外）
     if: |
-      (github.event_name == 'issue_comment' && !github.event.issue.pull_request && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'issue_comment' && !github.event.issue.pull_request && contains(github.event.comment.body, '@claude') && github.event.comment.user.type != 'Bot') ||
       (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
 
     runs-on: ubuntu-latest
