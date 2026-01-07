@@ -1,30 +1,34 @@
-name: Claude Code (Issue)
+name: Claude Code (Issue & PR Code Comments)
 
 on:
   # Issue での @claude メンション
   issue_comment:
     types: [created]
+  # PR のコード行へのコメントでの @claude メンション
+  pull_request_review_comment:
+    types: [created]
   # Issue 作成時に @claude が含まれている場合、または claude がアサインされた場合
   issues:
     types: [opened, assigned]
 
-# 同じ Issue で重複実行を防止（Claude の応答コメントでキャンセルされないよう false に設定）
+# 同じ Issue/PR で重複実行を防止（Claude の応答コメントでキャンセルされないよう false に設定）
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.issue.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
   claude:
-    # Issue での @claude メンション（PR は claude-code-review.yml で処理、bot のコメントは除外）
+    # Issue での @claude、または PR のコード行へのコメントでの @claude（bot のコメントは除外）
     if: |
       (github.event_name == 'issue_comment' && !github.event.issue.pull_request && contains(github.event.comment.body, '@claude') && github.event.comment.user.type != 'Bot') ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') && github.event.comment.user.type != 'Bot') ||
       (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
 
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: write
       issues: write
       id-token: write
       actions: read # CI結果を読み取るために必要
