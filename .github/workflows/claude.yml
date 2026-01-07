@@ -11,17 +11,17 @@ on:
   issues:
     types: [opened, assigned]
 
-# 同じ Issue/PR で重複実行を防止（Claude の応答コメントでキャンセルされないよう false に設定）
+# 同じ Issue/PR で重複実行を防止（新しいリクエストが来たら実行中のジョブをキャンセル）
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   claude:
-    # Issue での @claude、または PR のコード行へのコメントでの @claude（bot のコメントは除外）
+    # Issue での @claude、または PR のコード行へのコメントでの @claude
     if: |
-      (github.event_name == 'issue_comment' && !github.event.issue.pull_request && contains(github.event.comment.body, '@claude') && github.event.comment.user.type != 'Bot') ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') && github.event.comment.user.type != 'Bot') ||
+      (github.event_name == 'issue_comment' && !github.event.issue.pull_request && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
 
     runs-on: ubuntu-latest

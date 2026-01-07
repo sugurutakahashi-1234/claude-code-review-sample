@@ -19,8 +19,8 @@ Pull Request が作成・更新されると、Claude Code が自動でコード�
 
 | ファイル | 用途 |
 |---------|------|
-| `claude-code-review.yml` | PR の自動レビュー + PR 上での `@claude` |
-| `claude.yml` | Issue での `@claude` メンションへの応答 |
+| `claude-code-review.yml` | PR の自動レビュー + PR 全体へのコメント `@claude` |
+| `claude.yml` | Issue + PR コード行へのコメント `@claude` |
 
 ## セットアップ
 
