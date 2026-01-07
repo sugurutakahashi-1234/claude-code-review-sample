@@ -11,10 +11,10 @@ on:
   issues:
     types: [opened, assigned]
 
-# 同じ Issue/PR で重複実行を防止（新しいリクエストが来たら実行中のジョブをキャンセル）
+# 同じ Issue/PR で重複実行を防止（進捗コメントでキャンセルされないよう false に設定）
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   claude:
