@@ -7,6 +7,9 @@ on:
   # PR のコード行へのコメントでの @claude メンション
   pull_request_review_comment:
     types: [created]
+  # PR レビュー（Approve/Request changes/Comment）での @claude メンション
+  pull_request_review:
+    types: [submitted]
   # Issue 作成時に @claude が含まれている場合、または claude がアサインされた場合
   issues:
     types: [opened, assigned]
@@ -18,10 +21,11 @@ concurrency:
 
 jobs:
   claude:
-    # Issue での @claude、または PR のコード行へのコメントでの @claude
+    # Issue での @claude、PR のコード行コメント、または PR レビューでの @claude
     if: |
       (github.event_name == 'issue_comment' && !github.event.issue.pull_request && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
       (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
 
     runs-on: ubuntu-latest
