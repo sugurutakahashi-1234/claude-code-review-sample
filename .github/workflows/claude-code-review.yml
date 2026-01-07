@@ -9,26 +9,31 @@ on:
     #   - "src/**/*.tsx"
     #   - "src/**/*.js"
     #   - "src/**/*.jsx"
-  # @claude メンションは claude.yml で処理
+  # PR 上での @claude メンション
+  pull_request_review_comment:
+    types: [created]
+  issue_comment:
+    types: [created]
 
-# 同じPRで新しいコミットがpushされた場合、実行中のレビューをキャンセル
+# 同じPRで重複実行を防止（Claude の応答コメントでキャンセルされないよう false に設定）
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
+  cancel-in-progress: false
 
 jobs:
   claude-review:
-    # ドラフトPRと develop→main の Release PR はスキップ
+    # PR イベント、または PR 上での @claude メンション
     if: |
-      github.event.pull_request.draft == false &&
-      !(github.event.pull_request.head.ref == 'develop' && github.event.pull_request.base.ref == 'main')
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false && !(github.event.pull_request.head.ref == 'develop' && github.event.pull_request.base.ref == 'main')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@claude'))
 
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
-      pull-requests: read
-      issues: read
+      pull-requests: write
+      issues: write
       id-token: write
 
     steps:
@@ -46,10 +51,10 @@ jobs:
           # 追加コミット時に同じコメントを更新する
           use_sticky_comment: true
 
-          # 自動レビュー用プロンプト
+          # レビュー用プロンプト
           prompt: |
             REPO: ${{ github.repository }}
-            PR NUMBER: ${{ github.event.pull_request.number }}
+            PR NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
 
             Note: The PR branch is already checked out in the current working directory.
 
