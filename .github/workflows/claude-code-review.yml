@@ -9,31 +9,26 @@ on:
     #   - "src/**/*.tsx"
     #   - "src/**/*.js"
     #   - "src/**/*.jsx"
-  # @claude メンションで応答（PR のコメントのみ、普通の Issue では動作しない）
-  pull_request_review_comment:
-    types: [created]
-  issue_comment:
-    types: [created]
+  # @claude メンションは claude.yml で処理
 
 # 同じPRで新しいコミットがpushされた場合、実行中のレビューをキャンセル
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   claude-review:
+    # ドラフトPRと develop→main の Release PR はスキップ
+    if: |
+      github.event.pull_request.draft == false &&
+      !(github.event.pull_request.head.ref == 'develop' && github.event.pull_request.base.ref == 'main')
+
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
       pull-requests: write
       id-token: write
-
-    # ドラフトPRと develop→main の Release PR はスキップ、コメントの場合は @claude メンションが必要
-    if: |
-      (github.event_name == 'pull_request' && github.event.pull_request.draft == false && !(github.event.pull_request.head.ref == 'develop' && github.event.pull_request.base.ref == 'main')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@claude'))
 
     steps:
       - name: Checkout repository
@@ -54,7 +49,7 @@ jobs:
           # 自動レビュー用プロンプト
           prompt: |
             REPO: ${{ github.repository }}
-            PR NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
 
             Note: The PR branch is already checked out in the current working directory.
 
