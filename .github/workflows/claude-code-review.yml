@@ -69,9 +69,11 @@ jobs:
             レビューコメントの投稿方法：
             - 全体的なフィードバックには `gh pr comment` を使用してください
             - 特定のコード行への指摘には `mcp__github_inline_comment__create_inline_comment` を使用してください
-            - GitHubコメントのみを投稿し、メッセージとしてレビューテキストを送信しないでください
+            - レビュー内容は、必ず上記のコマンド/ツールを用いたGitHubコメントとしてのみ投稿してください
+            - アシスタントの通常のテキスト応答には、レビュー内容を含めず、進行状況や実行結果のみを記載してください
 
             必ず日本語でレビューを実施し、具体的で建設的なフィードバックを提供してください。
 
           # PRコメントと差分表示用のツールを許可
-          claude_args: '--allowed-tools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"'
+          claude_args: |
+            --allowed-tools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
