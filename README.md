@@ -51,6 +51,26 @@ Claude Code 内でスラッシュコマンドを実行してトークンを取�
 
 詳細は [Claude Code Action のドキュメント](https://github.com/anthropics/claude-code-action#setup) を参照してください。
 
+## 使い方
+
+### 自動レビュー
+
+PR を作成すると自動でレビューが実行されます。
+
+### @claude メンション
+
+以下の場所で `@claude` をメンションすると Claude が応答します：
+
+- **PR 全体へのコメント**: 詳細なレビューを再実行
+- **PR コード行へのコメント**: 指定したコードについて回答
+- **PR レビュー**: レビュー内容に対して回答
+- **Issue**: Issue の内容について回答
+
+例：
+```
+@claude このコードのパフォーマンスを改善できますか？
+```
+
 ## 参考リンク
 
 - [Claude Code GitHub Action](https://github.com/anthropics/claude-code-action)
