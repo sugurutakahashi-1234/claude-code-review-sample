@@ -18,10 +18,8 @@ Pull Request が作成・更新されると、Claude Code が自動でコード�
 
 ## ワークフロー構成
 
-| ファイル | 用途 |
-|---------|------|
-| `claude-code-review.yml` | PR の自動レビュー + PR 全体へのコメント `@claude` |
-| `claude.yml` | Issue + PR コード行コメント + PR レビュー `@claude` |
+- `claude-code-review.yml`: PR の自動レビュー + PR 全体へのコメント `@claude`
+- `claude.yml`: Issue + PR コード行コメント + PR レビュー `@claude`
 
 ## セットアップ
 
